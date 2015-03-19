@@ -1,0 +1,10 @@
+{
+	"folders":
+	[
+		{
+			"path": "/Users/culim/project/phaser-2d-navmesh",
+            "name": "Source",
+            "file_exclude_patterns": ["*.html"]
+		}
+	]
+}
