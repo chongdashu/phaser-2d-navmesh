@@ -55,16 +55,31 @@ GameState.prototype.constructor = GameState;
 
     p.triText = [];
 
+    p.player = {};
+
 
     p.initialize = function(game) {
 
     };
 
     // @phaser
+    p.preload = function() {
+        this.game.load.image("panda", "res/panda.png");
+    }
+
+    // @phaser
     p.create = function() {
         this.createBitmapContext();
         this.createPolygon();
+        this.createPlayer();
     };
+
+    p.createPlayer = function() {
+      this.player = this.game.add.sprite(150, 450, "panda");
+      this.player.anchor.set(0.5);
+      this.player.scale.set(0.1);
+
+    }
 
     p.createBitmapContext = function() {
         this.bitmap = this.game.add.bitmapData(this.game.width, this.game.height);
