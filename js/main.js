@@ -5,7 +5,7 @@
  * http://github.com/chongdashu
  */
 
- (function() {
+(function() {
     "use strict";
 
 var Edge = function(x1, y1, x2, y2) {
@@ -220,7 +220,7 @@ GameState.prototype.constructor = GameState;
       if (this.triPolies) {
         this.triPolies = [];
       }
-      if (this.triPolies.length == 0) {
+      if (this.triPolies.length === 0) {
           if (this.triangles.length > 0 ) {
             var triangles = this.triangles.slice();
             while (triangles.length > 0) {
@@ -229,10 +229,22 @@ GameState.prototype.constructor = GameState;
               for (var i=0; i < threePts.length; i++) {
                 flatPts = flatPts.concat(threePts[i]);
               }
+
+              var edges = [];
+              edges.push(new Edge(threePts[0][0], threePts[0][1], threePts[1][0], threePts[1][1]));
+              edges.push(new Edge(threePts[1][0], threePts[1][1], threePts[2][0], threePts[2][1]));
+              edges.push(new Edge(threePts[2][0], threePts[2][1], threePts[0][0], threePts[0][1]));
+
+              console.log("edges="+edges);
               
               var tri = new Phaser.Polygon(flatPts);
               tri.strokeStyle = "rgb(" + this.game.rnd.pick([255,0]) + "," + this.game.rnd.pick([255,0]) + "," + this.game.rnd.pick([255,0]) + ")";
               tri.fillStyle = "rgb(" + this.game.rnd.pick([255,0]) + "," + this.game.rnd.pick([255,0]) + "," + this.game.rnd.pick([255,0]) + ")";
+              tri.edges = edges.slice();
+              tri.neighbors = [];
+
+              tri.id = "triangle_" + this.triPolies.length;
+              this.triangleIds[tri.id] = tri;
               this.triPolies.push(tri);
             }
           }
@@ -269,6 +281,42 @@ GameState.prototype.constructor = GameState;
         
       }
 
+      this.edgeToTriangles = {};
+      for (var i =0; i < this.triPolies.length; i++) {
+        var triPoly = this.triPolies[i]; 
+        for (var j=0; j < triPoly.edges.length; j++) {
+          var edge = triPoly.edges[j];
+          if (!this.edgeToTriangles[edge.toString()]) {
+            this.edgeToTriangles[edge.toString()] = [];
+          }
+          this.edgeToTriangles[edge.toString()].push(triPoly);
+        }
+      }
+
+      for (var i =0; i < this.triPolies.length; i++) {
+        var triPoly = this.triPolies[i]; 
+        for (var j=0; j < triPoly.edges.length; j++) {
+          var edge = triPoly.edges[j];
+          for (var k=0; k < this.edgeToTriangles[edge.toString()].length; k++) {
+            var triPoly2 = this.edgeToTriangles[edge.toString()][k];
+
+            if (triPoly !== triPoly2) {
+              if (triPoly.neighbors.indexOf(triPoly2) < 0) {
+                triPoly.neighbors.push(triPoly2);
+              }
+              if (triPoly2.neighbors.indexOf(triPoly) < 0) {
+                triPoly2.neighbors.push(triPoly);
+              }
+            }
+            
+
+          }
+        }
+      }
+
+
+
+
     };
 
     p.updateInput = function() {
@@ -277,8 +325,6 @@ GameState.prototype.constructor = GameState;
         if (!this.mouseDown && this.game.input.mousePointer.isDown) {
             console.log("down, (%s, %s)", clientX, clientY);
             this.mouseDown = true;
-            
-
         }
         else if (this.mouseDown && !this.game.input.mousePointer.isDown) {
             this.mouseDown = false;
@@ -303,5 +349,7 @@ window.GameState=GameState
 
 var game = new Phaser.Game(800, 600, Phaser.AUTO, "main");
 game.state.add("main", GameState, true);
+
+var gameState = game.state.getCurrentState();
 
 
