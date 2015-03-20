@@ -53,6 +53,8 @@ GameState.prototype.constructor = GameState;
 
     p.triPolies = [];
 
+    p.triText = [];
+
 
     p.initialize = function(game) {
 
@@ -99,8 +101,35 @@ GameState.prototype.constructor = GameState;
           }
         }
 
-        for (var i = this.triPolies.length - 1; i >= 0; i--) {
-          this.drawPolygon(this.triPolies[i]);  
+        if (this.triText.length==0) {
+            this.triText = this.game.add.group();
+        }
+
+        for (var i = 0; i < this.triPolies.length; i++) {
+          var poly = this.triPolies[i]
+          this.drawPolygon(poly); 
+
+          if (this.triText.length==i) {
+
+            var avgX = 0;
+            var avgY = 0;
+
+            for (var i = 0; i < poly.points.length; i++) {
+              console.log(poly.points[i], poly.points[i+1]);
+              avgX += poly.points[i].x
+              avgY += poly.points[i].y
+            };
+
+            avgX /= poly.points.length;
+            avgY /= poly.points.length;
+
+            console.log(avgX, avgY);
+
+            var txt = this.game.add.text(avgX, avgY, "#" + this.triPolies.indexOf(poly), { font: "12px Arial", fill: "#ff0044", align: "center" });
+            console.log(txt);
+            this.triText.add(txt);
+          }
+
         };
           
         
