@@ -5,6 +5,73 @@
  * http://github.com/chongdashu
  */
 
+ (function() {
+    "use strict";
+
+var Edge = function(x1, y1, x2, y2) {
+  this.initialize(x1, y1, x2, y2);
+};
+var p = Edge.prototype;
+Edge.prototype.constructor = Edge;
+    
+    p.point1 = null;
+    p.point2 = null;
+
+    p.initialize = function(x1, y1, x2, y2) {
+      this.x1 = x1 ? x1 : 0;
+      this.y1 = y1 ? y1 : 0;
+      this.x2 = x2 ? x2 : 0;
+      this.y2 = y2 ? y2 : 0;
+
+      if (this.x2 < this.x1) {
+        this.x1 = x2;
+        this.y1 = y2;
+        this.x2 = x1;
+        this.y2 = y1;
+      }
+      else if (this.x2 == this.x1) {
+        if (this.y2 < this.y1) {
+          this.x1 = x2;
+          this.y1 = y2;
+          this.x2 = x1;
+          this.y2 = y1;
+        }
+      }
+
+      this.point1 = new Phaser.Point(this.x1,this.y1);
+      this.point2 = new Phaser.Point(this.x2,this.y2);
+      
+    };
+
+    p.equalsToEdge = function(edge) {
+      // return (x1==edge.x1 && y1==edge.y1 && x2==edge.x2 && y2==edge.y2) || 
+      //        (x1==edge.x2 && y1==edge.y2 && x2==edge.x1 && y2==edge.y1) 
+
+      var truthA = Phaser.Point.equals(this.point1, edge.point1); // && Phaser.Point.equals(this.point2, edge.point2);
+      var truthB = Phaser.Point.equals(this.point2, edge.point2); // && Phaser.Point.equals(this.point2, edge.point1);
+
+      return truthA && truthB;
+    };
+
+    p.toString = function() {
+      return this.point1 + "," + this.point2;
+    };
+
+    Edge.test = function() {
+      console.log(new Edge(0,0,1,1).equalsToEdge(new Edge(1,1,0,0)));
+      console.log(new Edge(0,0,1,1).equalsToEdge(new Edge(0,0,1,1)));
+      console.log(new Edge(1,0,0,1).equalsToEdge(new Edge(0,1,1,0)));
+      console.log(new Edge(1,0,0,1).equalsToEdge(new Edge(0,1,1,0)));
+      console.log(new Edge(0,0,5,5).equalsToEdge(new Edge(5,5,0,0)));
+      console.log(new Edge(0,1,0,5).equalsToEdge(new Edge(0,5,0,1)));
+      console.log(new Edge(0,10,0,5).equalsToEdge(new Edge(0,5,0,10)));
+    };
+
+
+
+window.Edge=Edge
+}());
+
 
 (function() {
     "use strict";
@@ -53,10 +120,15 @@ GameState.prototype.constructor = GameState;
 
     p.triPolies = [];
 
-    p.triText = [];
+    p.triText = null;
 
     p.player = {};
 
+    // Reference: http://www.gamedev.net/page/resources/_/technical/artificial-intelligence/generating-2d-navmeshes-r3393
+    p.triangleIds = {}; // <Polygon, Int>
+    p.vertexIds = {};   // <Point, Int>
+    p.vertices = []     // 
+    p.edgeToTriangles = {} // <Edge, Triangles[]>
 
     p.initialize = function(game) {
 
@@ -97,59 +169,12 @@ GameState.prototype.constructor = GameState;
         this.bitmap.context.clearRect(0,0,this.game.width, this.game.height);
         this.drawPolygon(this.polygon);
 
-        if (this.triPolies.length == 0) {
-          if (this.triangles.length > 0 ) {
-            var triangles = this.triangles.slice();
-            while (triangles.length > 0) {
-              var threePts = triangles.splice(0,3);
-              var flatPts = [];
-              for (var i=0; i < threePts.length; i++) {
-                flatPts = flatPts.concat(threePts[i]);
-              }
-              
-              var tri = new Phaser.Polygon(flatPts);
-              tri.strokeStyle = "rgb(" + this.game.rnd.pick([255,0]) + "," + this.game.rnd.pick([255,0]) + "," + this.game.rnd.pick([255,0]) + ")";
-              tri.fillStyle = "rgb(" + this.game.rnd.pick([255,0]) + "," + this.game.rnd.pick([255,0]) + "," + this.game.rnd.pick([255,0]) + ")";
-              this.triPolies.push(tri);
-              
-            }
-          }
-        }
-
-        if (this.triText.length==0) {
-            this.triText = this.game.add.group();
-        }
-
         for (var i = 0; i < this.triPolies.length; i++) {
           var poly = this.triPolies[i]
           this.drawPolygon(poly); 
+        }
 
-          if (this.triText.length==i) {
-
-            var avgX = 0;
-            var avgY = 0;
-
-            for (var i = 0; i < poly.points.length; i++) {
-              console.log(poly.points[i], poly.points[i+1]);
-              avgX += poly.points[i].x
-              avgY += poly.points[i].y
-            };
-
-            avgX /= poly.points.length;
-            avgY /= poly.points.length;
-
-            console.log(avgX, avgY);
-
-            var txt = this.game.add.text(avgX, avgY, "#" + this.triPolies.indexOf(poly), { font: "12px Arial", fill: "#ff0044", align: "center" });
-            console.log(txt);
-            this.triText.add(txt);
-          }
-
-        };
-          
-        
-        
-    }
+    };
 
     p.drawPolygon = function(poly) {
 
@@ -191,6 +216,59 @@ GameState.prototype.constructor = GameState;
       }
 
       this.triangles = earcut([points]);
+
+      if (this.triPolies) {
+        this.triPolies = [];
+      }
+      if (this.triPolies.length == 0) {
+          if (this.triangles.length > 0 ) {
+            var triangles = this.triangles.slice();
+            while (triangles.length > 0) {
+              var threePts = triangles.splice(0,3);
+              var flatPts = [];
+              for (var i=0; i < threePts.length; i++) {
+                flatPts = flatPts.concat(threePts[i]);
+              }
+              
+              var tri = new Phaser.Polygon(flatPts);
+              tri.strokeStyle = "rgb(" + this.game.rnd.pick([255,0]) + "," + this.game.rnd.pick([255,0]) + "," + this.game.rnd.pick([255,0]) + ")";
+              tri.fillStyle = "rgb(" + this.game.rnd.pick([255,0]) + "," + this.game.rnd.pick([255,0]) + "," + this.game.rnd.pick([255,0]) + ")";
+              this.triPolies.push(tri);
+            }
+          }
+      }
+
+      console.log("%o", this.triPolies);
+
+      if (this.triText) {
+        this.triText.removeAll();
+      }
+      this.triText = this.game.add.group();
+      
+
+      for (var i = 0; i < this.triPolies.length; i++) {
+        var poly = this.triPolies[i]
+        // this.drawPolygon(poly); 
+        var avgX = 0;
+        var avgY = 0;
+
+        for (var j = 0; j < poly.points.length; j++) {
+          console.log(poly.points[j], poly.points[j+1]);
+          avgX += poly.points[j].x
+          avgY += poly.points[j].y
+        };
+
+        avgX /= poly.points.length;
+        avgY /= poly.points.length;
+
+        console.log(avgX, avgY);
+
+        var txt = this.game.add.text(avgX, avgY, "#" + this.triPolies.indexOf(poly), { font: "12px Arial", fill: "#ff0044", align: "center" });
+        console.log(txt);
+        this.triText.add(txt);
+        
+      }
+
     };
 
     p.updateInput = function() {
@@ -199,52 +277,20 @@ GameState.prototype.constructor = GameState;
         if (!this.mouseDown && this.game.input.mousePointer.isDown) {
             console.log("down, (%s, %s)", clientX, clientY);
             this.mouseDown = true;
-
-            // var points = this.polygon.points;
-            // points.push(new Phaser.Point(clientX, clientY));
-            // points = this.convexHull(points);
-            // this.polygon = new Phaser.Polygon(points);
-            // console.log(this.polygon.points.length);
-
-            this.cutPolygon(this.polygon);
+            
 
         }
         else if (this.mouseDown && !this.game.input.mousePointer.isDown) {
             this.mouseDown = false;
         }
 
+        if (this.game.input.keyboard.downDuration(Phaser.Keyboard.Z, 1)) {
+          this.cutPolygon(this.polygon);
+        }
+
 
     };
 
-    p.convexHull = function(points) {
-        points.sort(function(a, b) {
-          return a.x == b.x ? a.y - b.y : a.x - b.y;
-        });
-     
-       var lower = [];
-       for (var i = 0; i < points.length; i++) {
-          while (lower.length >= 2 && this.crossMult(lower[lower.length - 2], lower[lower.length - 1], points[i]) <= 0) {
-             lower.pop();
-          }
-          lower.push(points[i]);
-       }
-     
-       var upper = [];
-       for (var i = points.length - 1; i >= 0; i--) {
-          while (upper.length >= 2 && this.crossMult(upper[upper.length - 2], upper[upper.length - 1], points[i]) <= 0) {
-             upper.pop();
-          }
-          upper.push(points[i]);
-       }
-     
-       upper.pop();
-       lower.pop();
-       return lower.concat(upper);
-    };
-
-    p.crossMult = function(o, a, b) {
-       return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
-    };
 
     // @phaser
     p.render = function() {
