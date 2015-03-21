@@ -529,9 +529,12 @@ GameState.prototype.constructor = GameState;
 
 
     p.updateInput = function() {
-        var clientX = this.game.input.mousePointer.clientX;
-        var clientY = this.game.input.mousePointer.clientY;
-        if (!this.mouseDown && this.game.input.mousePointer.isDown) {
+        var clientX = this.game.input.activePointer.clientX;
+        var clientY = this.game.input.activePointer.clientY;
+        if (!this.mouseDown && this.game.input.activePointer.isDown) {
+          if (this.triangles.length === 0 ) {
+            this.cutPolygon(this.polygon);
+          }
             console.log("down, (%s, %s)", clientX, clientY);
             this.mouseDown = true;
             this.targetPoint = new Phaser.Point(clientX, clientY);
