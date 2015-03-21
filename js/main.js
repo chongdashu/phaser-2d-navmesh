@@ -283,10 +283,10 @@ GameState.prototype.constructor = GameState;
             var first = path[0];
             var last = path.length - 2 >= 0 ? path[path.length-2] : first;
 
-            console.log("first:%s, last=%s", first.id, last.id);
-            console.log("last=" + last.id);
-            console.log("last.center.x:%s, last.center.y=%s", last.center.x, last.center.y);
-            console.log("this.player.x:%s, this.player.y=%s", this.player.x, this.player.y);
+            // console.log("first:%s, last=%s", first.id, last.id);
+            // console.log("last=" + last.id);
+            // console.log("last.center.x:%s, last.center.y=%s", last.center.x, last.center.y);
+            // console.log("this.player.x:%s, this.player.y=%s", this.player.x, this.player.y);
 
 
             if (Phaser.Math.fuzzyEqual(last.center.x, this.player.x, 1) &&
@@ -333,7 +333,7 @@ GameState.prototype.constructor = GameState;
       var iters = 0;
 
       while (!openSet.isEmpty() && iters < 100) {
-        console.log(iters);
+
         var current = this.getLowestFNode(openSet, f);
         if (current == end) {
           return this.path(from, end);
